@@ -1,0 +1,18 @@
+# Ignore downloaded media and temporary output files
+*.mp4
+*.mkv
+*.webm
+*.avi
+*.mov
+*.flv
+*.m4v
+*.ts
+*.mp3
+*.wav
+*.srt
+*.txt
+
+# Ignore local working folders
+output/
+downloads/
+transcripts/
