@@ -11,6 +11,7 @@
 *.wav
 *.srt
 *.txt
+!requirements.txt
 
 # Ignore local working folders
 output/
