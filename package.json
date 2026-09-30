@@ -1,0 +1,8 @@
+{
+  "name": "anyvd",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@netlify/functions": "^5.0.0"
+  }
+}

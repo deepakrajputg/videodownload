@@ -17,3 +17,9 @@
 output/
 downloads/
 transcripts/
+
+# Dependencies
+node_modules/
+
+# Local Netlify folder
+.netlify
