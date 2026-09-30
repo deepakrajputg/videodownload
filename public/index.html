@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AnyVD — Paste a link, get the video</title>
+  <meta name="description" content="Paste a video link and get a download link in seconds." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0e0d0b;
+      --paper: #f3ecdf;
+      --ink: #0e0d0b;
+      --muted: #8d8578;
+      --hot: #ff4d1f;
+      --line: #2a2723;
+      --ok: #c6f24e;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(1200px 600px at 85% -10%, rgba(255, 77, 31, .18), transparent 60%),
+        repeating-linear-gradient(0deg, transparent 0 39px, rgba(255,255,255,.025) 39px 40px),
+        var(--bg);
+      color: var(--paper);
+      font-family: "Bricolage Grotesque", system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+    }
+    .wrap { width: min(920px, 92vw); margin: 0 auto; }
+
+    header { padding: 28px 0; display: flex; justify-content: space-between; align-items: center; }
+    .logo { font-weight: 800; font-size: 22px; letter-spacing: -.02em; display: flex; gap: 10px; align-items: center; }
+    .logo i { width: 14px; height: 14px; border-radius: 50%; background: var(--hot); box-shadow: 0 0 0 4px rgba(255,77,31,.25); animation: rec 1.6s infinite; }
+    @keyframes rec { 50% { opacity: .35; } }
+    .tag { font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .12em; }
+
+    main { flex: 1; padding: 6vh 0 60px; }
+    h1 {
+      font-size: clamp(44px, 8.5vw, 104px);
+      line-height: .9;
+      letter-spacing: -.045em;
+      margin: 0 0 22px;
+      font-weight: 800;
+    }
+    h1 em { font-style: normal; color: var(--hot); }
+    .lede { color: var(--muted); font-size: 19px; max-width: 540px; margin: 0 0 42px; line-height: 1.45; }
+
+    form {
+      background: var(--paper);
+      color: var(--ink);
+      border-radius: 18px;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      box-shadow: 10px 10px 0 var(--hot);
+    }
+    input[type=url] {
+      border: 0; background: transparent; font: 500 19px "Bricolage Grotesque", sans-serif;
+      padding: 16px 14px; outline: none; color: var(--ink); min-width: 0;
+    }
+    input::placeholder { color: #a39a8b; }
+    button.go {
+      border: 0; border-radius: 12px; background: var(--ink); color: var(--paper);
+      font: 800 18px "Bricolage Grotesque", sans-serif; padding: 0 28px; cursor: pointer;
+      display: flex; align-items: center; gap: 10px; transition: transform .12s, background .12s;
+    }
+    button.go:hover { background: var(--hot); }
+    button.go:active { transform: scale(.97); }
+    button.go:disabled { opacity: .6; cursor: progress; }
+
+    .opts { display: flex; flex-wrap: wrap; gap: 18px; margin: 26px 0 0; font-family: "JetBrains Mono", monospace; font-size: 13px; color: var(--muted); align-items: center; }
+    .opts label { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+    select {
+      background: transparent; color: var(--paper); border: 1px solid var(--line); border-radius: 8px;
+      padding: 6px 8px; font: inherit;
+    }
+    input[type=checkbox] { accent-color: var(--hot); width: 16px; height: 16px; }
+
+    .spin { width: 16px; height: 16px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: s .7s linear infinite; }
+    @keyframes s { to { transform: rotate(360deg); } }
+
+    #status { margin-top: 44px; }
+    .err {
+      border: 1px solid rgba(255,77,31,.5); background: rgba(255,77,31,.08); color: #ffb49f;
+      border-radius: 14px; padding: 18px 20px; font-size: 16px; line-height: 1.45;
+    }
+    .results h2 { font-size: 15px; font-family: "JetBrains Mono", monospace; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin: 0 0 14px; }
+    .results h2 b { color: var(--ok); font-weight: 600; }
+    .item {
+      display: grid; grid-template-columns: 56px 1fr auto; gap: 16px; align-items: center;
+      border-top: 1px solid var(--line); padding: 16px 0;
+      animation: in .35s both;
+    }
+    .item:last-child { border-bottom: 1px solid var(--line); }
+    @keyframes in { from { opacity: 0; transform: translateY(8px); } }
+    .badge {
+      width: 56px; height: 56px; border-radius: 12px; background: #1c1a17; display: grid; place-items: center;
+      font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--hot); text-transform: uppercase; overflow: hidden;
+    }
+    .badge img { width: 100%; height: 100%; object-fit: cover; }
+    .meta { min-width: 0; }
+    .meta strong { display: block; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .meta span { display: block; font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 4px; }
+    .actions { display: flex; gap: 8px; }
+    .actions a, .actions button {
+      font: 600 14px "Bricolage Grotesque", sans-serif; text-decoration: none; border-radius: 10px; padding: 10px 14px;
+      border: 1px solid var(--line); color: var(--paper); background: transparent; cursor: pointer; white-space: nowrap;
+    }
+    .actions a.dl { background: var(--paper); color: var(--ink); border-color: var(--paper); }
+    .actions a.dl:hover { background: var(--hot); border-color: var(--hot); color: var(--paper); }
+    .tip { color: var(--muted); font-size: 14px; margin-top: 16px; line-height: 1.5; }
+    .tip code { font-family: "JetBrains Mono", monospace; color: var(--paper); font-size: 13px; }
+
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; margin-top: 90px; }
+    .steps div { border-top: 2px solid var(--paper); padding-top: 14px; }
+    .steps b { font-family: "JetBrains Mono", monospace; color: var(--hot); font-size: 13px; }
+    .steps p { margin: 8px 0 0; color: var(--muted); line-height: 1.45; }
+
+    footer { padding: 26px 0 36px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); }
+
+    @media (max-width: 640px) {
+      form { grid-template-columns: 1fr; box-shadow: 6px 6px 0 var(--hot); }
+      button.go { padding: 16px; justify-content: center; }
+      .item { grid-template-columns: 44px 1fr; }
+      .badge { width: 44px; height: 44px; }
+      .actions { grid-column: 1 / -1; }
+      .steps { grid-template-columns: 1fr; gap: 18px; margin-top: 60px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="wrap">
+    <div class="logo"><i></i>AnyVD</div>
+    <div class="tag">Video downloader</div>
+  </header>
+
+  <main class="wrap">
+    <h1>Paste a link.<br />Get the <em>video.</em></h1>
+    <p class="lede">Drop in a link to a video file or a page with a video on it. AnyVD finds the file so you can save it.</p>
+
+    <form id="form" autocomplete="off">
+      <input id="url" type="url" required placeholder="https://example.com/watch/my-video" aria-label="Video link" />
+      <button class="go" id="go" type="submit">Find video</button>
+    </form>
+
+    <div class="opts">
+      <label>Quality
+        <select id="quality">
+          <option value="max">Best</option>
+          <option value="1080" selected>1080p</option>
+          <option value="720">720p</option>
+          <option value="480">480p</option>
+          <option value="360">360p</option>
+        </select>
+      </label>
+      <label><input id="audio" type="checkbox" /> Audio only</label>
+    </div>
+
+    <section id="status" aria-live="polite"></section>
+
+    <section class="steps">
+      <div><b>01</b><p>Copy the link of the video you want to save.</p></div>
+      <div><b>02</b><p>Paste it above and press <strong>Find video</strong>.</p></div>
+      <div><b>03</b><p>Press <strong>Download</strong> on the file you want.</p></div>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    Only download videos you have the right to save. Respect creators and each site's terms of use.
+  </footer>
+
+  <script>
+    const form = document.getElementById("form");
+    const input = document.getElementById("url");
+    const go = document.getElementById("go");
+    const status = document.getElementById("status");
+
+    const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+    const TYPE_LABEL = { video: "MP4", audio: "Audio", stream: "HLS", image: "IMG" };
+
+    function ext(url) {
+      const m = url.match(/\.([a-z0-9]{2,5})(?:\?|#|$)/i);
+      return m ? m[1].toUpperCase() : null;
+    }
+
+    function render(data) {
+      const hasStream = data.links.some((l) => l.type === "stream");
+      const rows = data.links.map((l, i) => {
+        const name = l.filename || (data.title ? `${data.title}` : `Video ${i + 1}`);
+        const badge = l.thumb ? `<img src="${esc(l.thumb)}" alt="" />` : esc(ext(l.url) || TYPE_LABEL[l.type] || "FILE");
+        return `
+          <div class="item" style="animation-delay:${i * 40}ms">
+            <div class="badge">${badge}</div>
+            <div class="meta"><strong>${esc(name)}</strong><span>${esc(l.label)} · ${esc(l.url)}</span></div>
+            <div class="actions">
+              <button type="button" data-copy="${esc(l.url)}">Copy link</button>
+              <a class="dl" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" download="${esc(l.filename || "")}">Download</a>
+            </div>
+          </div>`;
+      }).join("");
+
+      status.innerHTML = `
+        <div class="results">
+          <h2><b>●</b> ${data.links.length} file${data.links.length === 1 ? "" : "s"} found</h2>
+          ${rows}
+          <p class="tip">If the video opens in a new tab instead of downloading, right-click it (or long-press on mobile) and choose <strong>Save video as…</strong>
+          ${hasStream ? `<br />Links ending in <code>.m3u8</code> are streams. Open them in VLC, or save them with <code>yt-dlp &lt;link&gt;</code>.` : ""}</p>
+        </div>`;
+    }
+
+    status.addEventListener("click", async (e) => {
+      const btn = e.target.closest("[data-copy]");
+      if (!btn) return;
+      await navigator.clipboard.writeText(btn.dataset.copy).catch(() => {});
+      btn.textContent = "Copied!";
+      setTimeout(() => (btn.textContent = "Copy link"), 1400);
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      go.disabled = true;
+      go.innerHTML = `<span class="spin"></span>Searching`;
+      status.innerHTML = "";
+      try {
+        const res = await fetch("/api/resolve", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            url: input.value.trim(),
+            quality: document.getElementById("quality").value,
+            audioOnly: document.getElementById("audio").checked,
+          }),
+        });
+        const data = await res.json().catch(() => ({ error: "Something went wrong. Please try again." }));
+        if (!res.ok || data.error) throw new Error(data.error || "Something went wrong.");
+        render(data);
+      } catch (err) {
+        status.innerHTML = `<div class="err">${esc(err.message)}</div>`;
+      } finally {
+        go.disabled = false;
+        go.textContent = "Find video";
+      }
+    });
+
+    // Allow sharing links like /?url=https://...
+    const shared = new URLSearchParams(location.search).get("url");
+    if (shared) { input.value = shared; form.requestSubmit(); }
+  </script>
+</body>
+</html>
